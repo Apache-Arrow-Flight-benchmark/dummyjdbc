@@ -1,11 +1,10 @@
 package com.googlecode.dummyjdbc.resultset;
 
+import java.math.BigDecimal;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Implementation of {@link ResultSetMetaData} which returns default values.
@@ -20,7 +19,8 @@ public class DummyResultSetMetaData implements ResultSetMetaData {
         DOUBLE(Types.DOUBLE, Double.class),
         DATE(Types.DATE, Date.class),
         TIME(Types.TIME, Date.class),
-        TIMESTAMP(Types.TIMESTAMP, Date.class);
+        TIMESTAMP(Types.TIMESTAMP, Date.class),
+        DECIMAL(Types.DECIMAL, BigDecimal.class);
 
         private final int sqlType;
         private final Class<?> clazz;
@@ -38,26 +38,21 @@ public class DummyResultSetMetaData implements ResultSetMetaData {
     private static final int DEFAULT_COLUMN_PRECISION = 60;
     private static final int DEFAULT_COLUMN_SCALE = 0;
     private final String tableName;
-    private final String[] columnNames;
-    private final LinkedHashMap<String, DataType> columnTypes = new LinkedHashMap<>();
 
-    public DummyResultSetMetaData(String tableName, String[] columnSpecs) {
+    public String[] getColumnNames() {
+        return columnNames;
+    }
+
+    private final String[] columnNames;
+    private final List<Map.Entry<String, DataType>> columnTypes = new ArrayList<>();
+
+    public DummyResultSetMetaData(String tableName, String[] columnSpecs, String[] columnNames) {
         for (String columnSpec : columnSpecs) {
             String[] specElems = Objects.requireNonNull(columnSpec.trim().toUpperCase(), "Header must be specified").split("\\s*\\|\\s*");
-            DataType dt;
-            switch (specElems.length) {
-                case 1:
-                    dt = DataType.VARCHAR;
-                    break;
-                case 2:
-                    dt = DataType.fromString(specElems[1]);
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unknown column spec: " + columnSpec);
-            }
-            columnTypes.put(specElems[0], dt);
+            DataType dt = DataType.fromString(specElems[0]);
+            columnTypes.add(new AbstractMap.SimpleEntry<>(specElems[0], dt));
         }
-        columnNames = columnTypes.keySet().toArray(new String[0]);
+        this.columnNames = columnNames;
         this.tableName = tableName;
     }
 
@@ -91,23 +86,20 @@ public class DummyResultSetMetaData implements ResultSetMetaData {
 
     @Override
     public int isNullable(int column) throws SQLException {
-        return 3;
+        return ResultSetMetaData.columnNullable;
 
     }
 
     @Override
     public boolean isSigned(int column) throws SQLException {
         int type = getColumnType(column);
-        if (type == DataType.DOUBLE.sqlType || type == DataType.INTEGER.sqlType) {
-            return true;
-        }
-        return false;
+        return type == DataType.DOUBLE.sqlType || type == DataType.INTEGER.sqlType || type == DataType.DECIMAL.sqlType;
 
     }
 
     @Override
     public int getColumnDisplaySize(int column) throws SQLException {
-        throw new UnsupportedOperationException("getColumnDisplaySize");
+        return 1000;
 
     }
 
@@ -128,11 +120,19 @@ public class DummyResultSetMetaData implements ResultSetMetaData {
 
     @Override
     public int getPrecision(int column) throws SQLException {
+        int type = getColumnType(column);
+        if (type == DataType.DECIMAL.sqlType){
+            return 7;
+        }
         return DEFAULT_COLUMN_PRECISION;
     }
 
     @Override
     public int getScale(int column) throws SQLException {
+        int type = getColumnType(column);
+        if (type == DataType.DECIMAL.sqlType){
+            return 2;
+        }
         return DEFAULT_COLUMN_SCALE;
     }
 
@@ -149,12 +149,12 @@ public class DummyResultSetMetaData implements ResultSetMetaData {
 
     @Override
     public int getColumnType(int column) throws SQLException {
-        return columnTypes.get(columnNames[column - 1]).sqlType;
+        return columnTypes.get(column - 1).getValue().sqlType;
     }
 
     @Override
     public String getColumnTypeName(int column) throws SQLException {
-        return columnTypes.get(columnNames[column - 1]).name();
+        return columnTypes.get(column - 1).getValue().name();
     }
 
     @Override
@@ -175,7 +175,7 @@ public class DummyResultSetMetaData implements ResultSetMetaData {
 
     @Override
     public String getColumnClassName(int column) throws SQLException {
-        return columnTypes.get(columnNames[column - 1]).clazz.getName();
+        return columnTypes.get(column - 1).getValue().clazz.getName();
     }
 
     @Override
@@ -188,9 +188,5 @@ public class DummyResultSetMetaData implements ResultSetMetaData {
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
         throw new UnsupportedOperationException("isWrapperFor");
 
-    }
-
-    public String[] getColumnNames() {
-        return columnNames;
     }
 }

@@ -1,12 +1,17 @@
 package com.googlecode.dummyjdbc.connection;
 
+import com.googlecode.dummyjdbc.resultset.impl.CSVResultSet;
+import com.googlecode.dummyjdbc.utils.MemoryStorage;
+
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.RowIdLifetime;
 import java.sql.SQLException;
+import java.util.*;
 
 public class DummyDatabaseMetaData implements DatabaseMetaData {
+
     @Override public boolean allProceduresAreCallable() throws SQLException {
         return false;
     }
@@ -276,7 +281,7 @@ public class DummyDatabaseMetaData implements DatabaseMetaData {
     }
 
     @Override public boolean supportsSchemasInTableDefinitions() throws SQLException {
-        return false;
+        return true;
     }
 
     @Override public boolean supportsSchemasInIndexDefinitions() throws SQLException {
@@ -504,7 +509,24 @@ public class DummyDatabaseMetaData implements DatabaseMetaData {
     }
 
     @Override public ResultSet getColumns(String s, String s2, String s3, String s4) throws SQLException {
-        return null;
+        List<Map<String, Object>> data = generateColumnMetadata();
+        return new CSVResultSet("mock", null, data);
+    }
+
+    private List<Map<String, Object>> generateColumnMetadata() {
+        List<Map<String, Object>> data = new ArrayList<>();
+        Map<String, Object> column;
+        List<String> names = MemoryStorage.getInstance().getColumnNames();
+        List<String> types = MemoryStorage.getInstance().getColumnTypes();
+
+        for (int i = 0; i < names.size(); i++) {
+            column = new HashMap<>();
+            column.put("TABLE_SCHEM", "mock");
+            column.put("TABLE_NAME", "mock");
+            column.put("COLUMN_NAME", names.get(i));
+            column.put("TYPE_NAME", types.get(i));
+        }
+        return data;
     }
 
     @Override public ResultSet getColumnPrivileges(String s, String s2, String s3, String s4) throws SQLException {
@@ -548,6 +570,9 @@ public class DummyDatabaseMetaData implements DatabaseMetaData {
     }
 
     @Override public boolean supportsResultSetType(int i) throws SQLException {
+        if (i == ResultSet.TYPE_SCROLL_INSENSITIVE) {
+            return true;
+        }
         return false;
     }
 

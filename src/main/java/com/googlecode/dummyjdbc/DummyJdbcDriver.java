@@ -2,6 +2,7 @@ package com.googlecode.dummyjdbc;
 
 import com.googlecode.dummyjdbc.connection.impl.DummyConnection;
 import com.googlecode.dummyjdbc.utils.FilenameUtils;
+import com.googlecode.dummyjdbc.utils.MemoryStorage;
 import com.googlecode.dummyjdbc.utils.StringUtils;
 
 import java.io.File;
@@ -82,6 +83,8 @@ public final class DummyJdbcDriver implements Driver {
 
 	@Override
 	public Connection connect(String url, Properties info) throws SQLException {
+		MemoryStorage.getInstance();
+
 		String database = parseConnectUrl(url);
 
 		loadTableResources(database);
