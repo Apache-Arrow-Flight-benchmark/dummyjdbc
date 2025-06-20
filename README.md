@@ -21,11 +21,11 @@ Specified in the first line of the CSV file. It is single integer number denotin
 The headers of the table follow a specific pattern, to enable inferring the column data type from them. Each elemnt should start with the name of the data type followed by `_` and subsequently any string of characters that assures uniqueness, for example `varchar_0`, `varchar_1`, etc.
 
 The supported types are:
-   * `varchar`,
-   * `decimal(7,2)` (the length is hardcoded, enabling variable length requires development),
-   * `double`,
-   * `date`,
-   * `decimal`.
+ * `varchar`,
+ * `decimal(7,2)` (the length is hardcoded, enabling variable length requires development),
+ * `double`,
+ * `date`,
+ * `decimal`.
 
 Any other type will be read as `java.lang.String`, so for example `char` columns can be used when wrapped in a required amount of whitespaces.
 
